@@ -1,15 +1,33 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import AgendaPage from '../views/AgendaPage.vue'
-import CreateAppointmentPage from '../views/CreateAppointmentPage.vue'
+// src/router/index.js
+import { createRouter, createWebHistory } from 'vue-router';
+import LoginPage from '../views/LoginPage.vue';
+import AgendaPage from '../views/AgendaPage.vue';
+import { isLoggedIn } from '../services/authService';
 
 const routes = [
-  { path: '/', component: AgendaPage },
-  { path: '/create-appointment', component: CreateAppointmentPage }
-]
+  { path: '/login', name: 'Login', component: LoginPage },
+  { 
+    path: '/agenda', 
+    name: 'Agenda', 
+    component: AgendaPage,
+    meta: { requiresAuth: true, role: 'Doctor' }
+  },
+  { path: '/:pathMatch(.*)*', redirect: '/login' }
+];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(),
   routes
-})
+});
 
-export default router
+// Global route guard
+router.beforeEach((to, from, next) => {
+  const token = isLoggedIn();
+  if (to.meta.requiresAuth && !token) {
+    next({ name: 'Login' });
+  } else {
+    next();
+  }
+});
+
+export default router;

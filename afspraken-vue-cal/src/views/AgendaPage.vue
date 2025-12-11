@@ -2,7 +2,8 @@
 import { ref, onMounted } from 'vue'
 import VueCal from 'vue-cal'
 import 'vue-cal/dist/vuecal.css'
-import axios from 'axios'
+import { useRouter } from 'vue-router'
+import api from '../services/axiosInstance' // jouw axios instance met token
 
 // Events array
 const events = ref([])
@@ -15,6 +16,8 @@ const showModal = ref(false)
 const modalContent = ref('')
 const selectedEventId = ref(null) // voor annuleren
 
+const router = useRouter()
+
 // Bereken maandag van een week
 function getWeekStart(date = new Date()) {
   const day = date.getDay() // zondag = 0, maandag = 1...
@@ -24,28 +27,38 @@ function getWeekStart(date = new Date()) {
   return weekStart
 }
 
+// Role check uit JWT
+function getRoleFromToken() {
+  const token = localStorage.getItem('userToken')
+  if (!token) return null
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || payload['role']
+  } catch {
+    return null
+  }
+}
+
 // Ophalen van afspraken van de API
 async function loadAppointments() {
   try {
     const weekStartISO = currentWeekStart.value.toISOString()
     console.log('API request met weekStart:', weekStartISO)
 
-    const response = await axios.get(
-      'https://localhost:44381/api/hospital/appointments/schedule/week',
-      { params: { weekStart: weekStartISO } }
-    )
+    const response = await api.get('hospital/appointments/schedule/week', {
+      params: { weekStart: weekStartISO }
+    })
 
     const apiData = response.data
     console.log('API response:', apiData)
 
-    // Maak een nieuw array aan (zorgt voor proper reactivity)
     const mappedEvents = apiData.length
       ? apiData.map(a => {
           const startDate = new Date(a.startTime)
           const endDate = new Date(a.endTime)
           
           return {
-            id: a.id, // nodig voor annuleren
+            id: a.id,
             start: startDate,
             end: endDate,
             title: `${a.patientName} (${a.patientId})`,
@@ -88,10 +101,10 @@ function onEventClick(event) {
 async function cancelAppointment() {
   if (!selectedEventId.value) return
   try {
-    await axios.post(`https://localhost:44381/api/hospital/appointments/appointment/cancel/${selectedEventId.value}`)
+    await api.post(`hospital/appointments/appointment/cancel/${selectedEventId.value}`)
     alert('Afspraak geannuleerd!')
     showModal.value = false
-    loadAppointments() // herlaad de afspraken
+    loadAppointments()
   } catch (err) {
     console.error(err)
     alert('Kon afspraak niet annuleren')
@@ -100,6 +113,19 @@ async function cancelAppointment() {
 
 // Component mount
 onMounted(() => {
+  const token = localStorage.getItem('userToken')
+  if (!token) {
+    router.push('/login')
+    return
+  }
+
+  const role = getRoleFromToken()
+  if (role !== 'Doctor') {
+    alert('Alleen doctors mogen deze pagina bekijken')
+    router.push('/login')
+    return
+  }
+
   currentWeekStart.value = getWeekStart()
   loadAppointments()
 })
@@ -107,7 +133,7 @@ onMounted(() => {
 
 <template>
   <div style="padding: 20px;">
-    <h1>Agenda</h1>
+    <h1>Agenda (Doctor)</h1>
 
     <!-- Week navigatie -->
     <div style="margin-bottom: 10px;">
