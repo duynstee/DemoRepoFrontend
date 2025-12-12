@@ -3,6 +3,7 @@ import LoginPage from '../views/LoginPage.vue';
 import AgendaPage from '../views/AgendaPage.vue';
 import { isLoggedIn } from '../services/authService';
 import CreateAppointmentPage from '../views/CreateAppointmentPage.vue';
+import PatientPage from '../views/PatientPage.vue';
 
 const routes = [
   { path: '/login', name: 'Login', component: LoginPage },
@@ -19,6 +20,13 @@ const routes = [
     name: 'NewAppointment',
     component: CreateAppointmentPage,
     meta: { requiresAuth: true, role: 'Doctor' }
+  },
+
+  {
+    path: '/patient',
+    name: 'PatientPortaal',
+    component: PatientPage,
+    meta: { requiresAuth: true, role: 'User' }
   },
 
   { path: '/:pathMatch(.*)*', redirect: '/login' }
