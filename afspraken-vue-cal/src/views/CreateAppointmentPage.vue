@@ -1,14 +1,11 @@
 <script setup>
 import { ref } from 'vue'
-import axios from 'axios'
+import api from '../services/axiosInstance'   // JUISTE IMPORT!
 
-// Formulier velden
+// Form fields
 const patientId = ref('')
 const appointmentTypeId = ref('')
 const startTime = ref('')
-
-// API endpoint
-const api = 'https://localhost:44381/api/hospital/appointments/appointment'
 
 // Functie om afspraak te maken
 async function createAppointment() {
@@ -16,14 +13,17 @@ async function createAppointment() {
     const payload = {
       patientId: Number(patientId.value),
       appointmentTypeId: Number(appointmentTypeId.value),
-      startTime: new Date(startTime.value) // datetime-local -> Date
+      startTime: new Date(startTime.value)
     }
 
-    const response = await axios.post(`${api}`, payload)
+    const response = await api.post(
+      'hospital/appointments/appointment',
+      payload
+    )
+
     alert('Afspraak succesvol aangemaakt!')
     console.log('Response:', response.data)
-    
-    // Formulier resetten
+
     patientId.value = ''
     appointmentTypeId.value = ''
     startTime.value = ''
@@ -39,11 +39,11 @@ async function createAppointment() {
     <h1>Nieuwe Afspraak</h1>
     <div style="display:flex; flex-direction: column; gap: 10px; max-width: 400px;">
       <p>patientId</p>
-      <input v-model="patientId" type="number" placeholder="Patient ID" />
+      <input v-model="patientId" type="number" />
       <p>appointmentTypeId</p>
-      <input v-model="appointmentTypeId" type="number" placeholder="Type ID" />
+      <input v-model="appointmentTypeId" type="number" />
       <p>Start date</p>
-      <input v-model="startTime" type="datetime-local" placeholder="Starttijd" />
+      <input v-model="startTime" type="datetime-local" />
       <button @click="createAppointment">Maak Afspraak</button>
     </div>
   </div>
